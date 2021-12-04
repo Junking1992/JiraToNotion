@@ -9,8 +9,9 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
     </properties>
 
     <dependencies>
@@ -26,4 +27,38 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <resources>
+            <resource>
+                <!-- 这里是放在 src/main/java-->
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>*.properties</include>
+                    <include>**/*.fxml</include>
+                    <include>**/fxml/*.fxml</include>
+                    <include>*.xml</include>
+                    <include>**/mapper/*.xml</include>
+                    <!-- 如果想要弄个包名专门放fxml文件，像上一行这样添加设置 -->
+                    <!-- 之后，使用getResource("fxml/xx.fxml")这样子 -->
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
