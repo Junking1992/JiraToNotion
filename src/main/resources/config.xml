@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config>
+    <jira>
+        <url>url</url>
+        <jql>jql</jql>
+    </jira>
+    <notion>
+        <token>token</token>
+        <databaseID>databaseID</databaseID>
+    </notion>
+</config>

@@ -1,0 +1,11 @@
+##ignore this file##
+target
+log
+out
+.classpath
+.project
+.settings
+
+##IdeaTest##
+/.idea/
+*.iml
