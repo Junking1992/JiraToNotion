@@ -44,24 +44,8 @@ public class Home implements Initializable {
         // 用户本地配置文件路径
         configLocation = Paths.get(System.getProperty("user.home"), ".jiraToNotion", "config.xml");
 
-        // 本地配置文件是否存在
-        if (Files.exists(configLocation)) {
-            // 读取本地配置文件
-            try (BufferedReader bufferedReader = Files.newBufferedReader(configLocation)) {
-                document = new SAXReader().read(bufferedReader);
-            } catch (DocumentException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            // 界面设置值
-            Element rootElement = document.getRootElement();
-            jiraUrl.setText(rootElement.element("jira").element("url").getText());
-            jiraJql.setText(rootElement.element("jira").element("jql").getText());
-            notionToken.setText(rootElement.element("notion").element("token").getText());
-            notionDatabaseId.setText(rootElement.element("notion").element("databaseID").getText());
-        } else {
+        // 本地配置文件不存在
+        if (!Files.exists(configLocation)) {
             // 配置文件父目录不存在
             if (!Files.exists(configLocation.getParent())) {
                 // 创建父目录
@@ -72,7 +56,7 @@ public class Home implements Initializable {
                 }
             }
 
-            // 文件不存在就从jar包里将默认的配置文件复制到本地
+            // 从jar包里将默认的配置文件复制到本地
             try (BufferedReader in = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/config.xml"))); BufferedWriter out = Files.newBufferedWriter(configLocation)) {
                 in.lines().forEach(line -> {
                     try {
@@ -86,6 +70,22 @@ public class Home implements Initializable {
                 e.printStackTrace();
             }
         }
+
+        // 读取本地配置文件
+        try (BufferedReader bufferedReader = Files.newBufferedReader(configLocation)) {
+            document = new SAXReader().read(bufferedReader);
+        } catch (DocumentException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 界面设置值
+        Element rootElement = document.getRootElement();
+        jiraUrl.setText(rootElement.element("jira").element("url").getText());
+        jiraJql.setText(rootElement.element("jira").element("jql").getText());
+        notionToken.setText(rootElement.element("notion").element("token").getText());
+        notionDatabaseId.setText(rootElement.element("notion").element("databaseID").getText());
     }
 
     public void jira_save(ActionEvent actionEvent) {

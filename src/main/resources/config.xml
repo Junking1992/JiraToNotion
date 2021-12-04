@@ -2,11 +2,11 @@
 
 <config>
     <jira>
-        <url>url</url>
-        <jql>jql</jql>
+        <url></url>
+        <jql></jql>
     </jira>
     <notion>
-        <token>token</token>
-        <databaseID>databaseID</databaseID>
+        <token></token>
+        <databaseID></databaseID>
     </notion>
 </config>
