@@ -4,9 +4,14 @@
     <jira>
         <url></url>
         <jql></jql>
+        <username></username>
+        <password></password>
     </jira>
     <notion>
         <token></token>
         <databaseID></databaseID>
     </notion>
+    <run>
+        <interval>10</interval>
+    </run>
 </config>
