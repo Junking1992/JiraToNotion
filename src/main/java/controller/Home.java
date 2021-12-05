@@ -10,10 +10,10 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import org.dom4j.Document;
-import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
+import service.JiraToNotion;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -41,9 +41,9 @@ public class Home implements Initializable {
      * 界面显示字段
      */
     public TextField jiraUrl;
-    public TextField jiraJql;
     public TextField jiraUsername;
     public PasswordField jiraPassword;
+    public TextArea jiraJql;
     public TextField notionToken;
     public TextField notionDatabaseId;
     public Slider slider;
@@ -57,10 +57,7 @@ public class Home implements Initializable {
     public Button notion_save_but;
     public Button start;
 
-    /**
-     * 运行状态
-     */
-    public boolean run = false;
+    private JiraToNotion jiraToNotion = new JiraToNotion();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -76,6 +73,7 @@ public class Home implements Initializable {
                     Files.createDirectory(configLocation.getParent());
                 } catch (IOException e) {
                     e.printStackTrace();
+                    showMsg("创建父目录异常:" + e.getMessage());
                 }
             }
 
@@ -87,20 +85,21 @@ public class Home implements Initializable {
                         out.newLine();
                     } catch (IOException e) {
                         e.printStackTrace();
+                        showMsg("配置文件复制到本地异常:" + e.getMessage());
                     }
                 });
             } catch (IOException e) {
                 e.printStackTrace();
+                showMsg("配置文件复制到本地异常:" + e.getMessage());
             }
         }
 
         // 读取本地配置文件
         try (BufferedReader bufferedReader = Files.newBufferedReader(configLocation)) {
             document = new SAXReader().read(bufferedReader);
-        } catch (DocumentException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            showMsg("读取本地配置文件异常:" + e.getMessage());
         }
 
         // 界面设置值
@@ -143,6 +142,9 @@ public class Home implements Initializable {
         });
     }
 
+    /**
+     * jira保存按钮触发
+     */
     public void jira_save(ActionEvent actionEvent) {
         // 设置修改后的值
         document.getRootElement().element("jira").element("url").setText(jiraUrl.getText());
@@ -154,6 +156,9 @@ public class Home implements Initializable {
         showMsg("保存成功!");
     }
 
+    /**
+     * notion保存按钮触发
+     */
     public void notion_save(ActionEvent actionEvent) {
         // 设置修改后的值
         document.getRootElement().element("notion").element("token").setText(notionToken.getText());
@@ -163,16 +168,19 @@ public class Home implements Initializable {
         showMsg("保存成功!");
     }
 
+    /**
+     * 开始按钮触发
+     */
     public void start(ActionEvent actionEvent) {
-        if (run) {
+        if (jiraToNotion.running()) {
             // 停止更新数据
-            run = false;
+            jiraToNotion.stop();
             start.setText("启动");
             start.setTextFill(Color.rgb(0, 0, 0));
             showMsg("正在停止...");
         } else {
             // 启动更新数据
-            run = true;
+            jiraToNotion.run();
             start.setText("停止");
             start.setTextFill(Color.rgb(141, 70, 71));
             showMsg("正在启动...");
@@ -190,6 +198,7 @@ public class Home implements Initializable {
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
+            showMsg("保存到本地配置文件异常:" + e.getMessage());
         } finally {
             if (writer != null) {
                 try {
