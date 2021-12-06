@@ -38,7 +38,7 @@ public class JiraToNotion {
             run = true;
             while (run) {
                 // 实时获取最新配置
-                getConfig();
+                loadConfig();
                 // 校验间隔时间
                 String intervalStr = config.getInterval();
                 if (intervalStr == null && intervalStr.trim().isEmpty()) {
@@ -80,16 +80,16 @@ public class JiraToNotion {
     }
 
     /**
-     * 读取配置文件
+     * 加载配置文件
      *
      * @return Config
      */
-    public void getConfig() {
+    public void loadConfig() {
         // 读取本地配置文件
         try (BufferedReader bufferedReader = Files.newBufferedReader(configPath)) {
             Document document = new SAXReader().read(bufferedReader);
             Element rootElement = document.getRootElement();
-            config = new Config(rootElement.element("jira").element("url").getText(), rootElement.element("jira").element("jql").getText(), rootElement.element("jira").element("username").getText(), rootElement.element("jira").element("password").getText(), rootElement.element("notion").element("token").getText(), rootElement.element("notion").element("databaseID").getText(), rootElement.element("run").element("interval").getText());
+            config = new Config(rootElement.element("jira").element("url").getText(), rootElement.element("jira").element("jql").getText(), rootElement.element("jira").element("username").getText(), rootElement.element("jira").element("password").getText(), rootElement.element("notion").element("token").getText(), rootElement.element("notion").element("databaseID").getText(), rootElement.element("notion").element("version").getText(), rootElement.element("run").element("interval").getText());
         } catch (Exception e) {
         }
     }
@@ -124,6 +124,13 @@ public class JiraToNotion {
     }
 
     public void notionDataQuery() {
+        loadConfig();
+        NotionApi notionApi = new NotionApi(config);
+        notionApi.serch();
+    }
 
+    public static void main(String[] args) {
+        JiraToNotion jiraToNotion = new JiraToNotion();
+        jiraToNotion.notionDataQuery();
     }
 }

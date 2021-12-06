@@ -10,15 +10,17 @@ public class Config {
     private String jiraPassword;
     private String notionToken;
     private String notionDatabaseId;
+    private String notionVersion;
     private String interval;
 
-    public Config(String jiraUrl, String jiraJql, String jiraUsername, String jiraPassword, String notionToken, String notionDatabaseId, String interval) {
+    public Config(String jiraUrl, String jiraJql, String jiraUsername, String jiraPassword, String notionToken, String notionDatabaseId, String notionVersion, String interval) {
         this.jiraUrl = jiraUrl;
         this.jiraJql = jiraJql;
         this.jiraUsername = jiraUsername;
         this.jiraPassword = jiraPassword;
         this.notionToken = notionToken;
         this.notionDatabaseId = notionDatabaseId;
+        this.notionVersion = notionVersion;
         this.interval = interval;
     }
 
@@ -44,6 +46,10 @@ public class Config {
 
     public String getNotionDatabaseId() {
         return notionDatabaseId;
+    }
+
+    public String getNotionVersion() {
+        return notionVersion;
     }
 
     public String getInterval() {

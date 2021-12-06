@@ -10,6 +10,7 @@
     <notion>
         <token></token>
         <databaseID></databaseID>
+        <version>2021-08-16</version>
     </notion>
     <run>
         <interval>10</interval>

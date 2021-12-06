@@ -30,6 +30,11 @@
             <artifactId>jira-client</artifactId>
             <version>0.5</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.78</version>
+        </dependency>
     </dependencies>
 
     <build>
