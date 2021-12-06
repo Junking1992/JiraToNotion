@@ -1,10 +1,13 @@
 package service;
 
 import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSONObject;
 import net.rcarz.jiraclient.BasicCredentials;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
+import notion.NotionApi;
+import notion.Properties;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
@@ -123,14 +126,35 @@ public class JiraToNotion {
         return new ArrayList<>();
     }
 
-    public void notionDataQuery() {
+
+
+    public void testNotionApi() {
         loadConfig();
         NotionApi notionApi = new NotionApi(config);
-        notionApi.serch();
+
+        // 查询接口测试
+        JSONObject database = notionApi.serch("database");
+        System.out.println(database);
+
+        // 新增接口测试
+        Properties.Title jTitle = new Properties.Title("J_Title", "Java");
+        Properties.RichText jText = new Properties.RichText("J_Text", "Java");
+        Properties.Number jNumber = new Properties.Number("J_Number", "999.99");
+        Properties.Date jDate = new Properties.Date("J_Date", "2021-12-12");
+        List<Properties> properties = new ArrayList<>();
+        properties.add(jTitle);
+        properties.add(jText);
+        properties.add(jNumber);
+        properties.add(jDate);
+        boolean insert = notionApi.insert(properties);
+        System.out.println(insert);
+
+        // 修改接口测试
+        // 删除接口测试
     }
 
     public static void main(String[] args) {
         JiraToNotion jiraToNotion = new JiraToNotion();
-        jiraToNotion.notionDataQuery();
+        jiraToNotion.testNotionApi();
     }
 }
