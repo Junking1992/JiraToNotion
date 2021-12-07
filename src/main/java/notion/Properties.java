@@ -37,8 +37,12 @@ public abstract class Properties {
 
     public static class Title extends Properties {
 
-        public Title(String field, String content) {
+        private Title(String field, String content) {
             super(field, content);
+        }
+
+        public static Title create(String field, String content) {
+            return new Title(field, content);
         }
 
         @Override
@@ -62,8 +66,12 @@ public abstract class Properties {
 
     public static class RichText extends Properties {
 
-        public RichText(String field, String content) {
+        private RichText(String field, String content) {
             super(field, content);
+        }
+
+        public static RichText create(String field, String content) {
+            return new RichText(field, content);
         }
 
         @Override
@@ -87,8 +95,12 @@ public abstract class Properties {
 
     public static class Number extends Properties {
 
-        public Number(String field, String content) {
+        private Number(String field, String content) {
             super(field, content);
+        }
+
+        public static Number create(String field, String content) {
+            return new Number(field, content);
         }
 
         @Override
@@ -102,8 +114,12 @@ public abstract class Properties {
 
     public static class Date extends Properties {
 
-        public Date(String field, String content) {
+        private Date(String field, String content) {
             super(field, content);
+        }
+
+        public static Date create(String field, String content) {
+            return new Date(field, content);
         }
 
         @Override
@@ -114,6 +130,25 @@ public abstract class Properties {
             JSONObject dateObject = new JSONObject();
             dateObject.put("type", "date");
             dateObject.put("date", object);
+            return dateObject;
+        }
+    }
+
+    public static class Url extends Properties {
+
+        private Url(String field, String content) {
+            super(field, content);
+        }
+
+        public static Url create(String field, String content) {
+            return new Url(field, content);
+        }
+
+        @Override
+        public JSONObject toJsonObject() {
+            JSONObject dateObject = new JSONObject();
+            dateObject.put("type", "url");
+            dateObject.put("url", getContent());
             return dateObject;
         }
     }

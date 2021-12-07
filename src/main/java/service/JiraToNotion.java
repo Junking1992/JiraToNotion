@@ -1,11 +1,10 @@
 package service;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import net.rcarz.jiraclient.BasicCredentials;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraClient;
-import net.rcarz.jiraclient.JiraException;
+import net.rcarz.jiraclient.*;
 import notion.NotionApi;
 import notion.Properties;
 import org.dom4j.Document;
@@ -17,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -56,22 +56,26 @@ public class JiraToNotion {
                     lastTime = System.currentTimeMillis();
                 } else {
                     long currentTime = System.currentTimeMillis();
-                    long time = (currentTime - lastTime) / 1000;// / 60;
+                    long time = (currentTime - lastTime) / 1000 / 60;
                     if (time < interval) {
                         continue;
                     }
                     lastTime = currentTime;
                 }
                 // 传输数据
-                transmission();
+                try {
+                    transmission();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 // 每10秒循环一次
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            System.out.println("运行已停止!");
+            System.out.println(DateUtil.now() + "运行已停止!");
         }).start();
     }
 
@@ -108,8 +112,25 @@ public class JiraToNotion {
      * 传输数据
      */
     public void transmission() {
-        System.out.println(DateUtil.now() + "-正在传输数据!");
-        jiraDataQuery();
+        System.out.println(DateUtil.now() + "开始传输!");
+        // 查询Jira数据
+        List<Issue> jiraList = jiraDataQuery();
+        // 查询Notion数据
+        List<String> notionList = notionDataQuery("Issue");
+        // 新增或更新Notion的数据
+        for (Issue issue : jiraList) {
+            // 更新
+            if (notionList.contains(issue.getKey())) {
+                System.out.println(DateUtil.now() + "试图更新!");
+            }
+            // 新增
+            else {
+                insertIssue(issue);
+            }
+        }
+        // 更新Notion标题时间
+        new NotionApi(config).updateTitel("Jira任务（" + DateUtil.format(new Date(), "HH:mm") + "更新）");
+        System.out.println(DateUtil.now() + "传输完成!");
     }
 
     /**
@@ -126,35 +147,64 @@ public class JiraToNotion {
         return new ArrayList<>();
     }
 
-
-
-    public void testNotionApi() {
-        loadConfig();
+    /**
+     * 查询notion数据
+     */
+    public List<String> notionDataQuery(String titleName) {
         NotionApi notionApi = new NotionApi(config);
+        JSONObject serch = notionApi.serch(NotionApi.PAGE, null);
+        JSONArray results = serch.getJSONArray("results");
+        while (serch.getBoolean("has_more")) {
+            serch = notionApi.serch(NotionApi.PAGE, serch.getString("next_cursor"));
+            results.addAll(serch.getJSONArray("results"));
+        }
 
-        // 查询接口测试
-        JSONObject database = notionApi.serch("database");
-        System.out.println(database);
-
-        // 新增接口测试
-        Properties.Title jTitle = new Properties.Title("J_Title", "Java");
-        Properties.RichText jText = new Properties.RichText("J_Text", "Java");
-        Properties.Number jNumber = new Properties.Number("J_Number", "999.99");
-        Properties.Date jDate = new Properties.Date("J_Date", "2021-12-12");
-        List<Properties> properties = new ArrayList<>();
-        properties.add(jTitle);
-        properties.add(jText);
-        properties.add(jNumber);
-        properties.add(jDate);
-        boolean insert = notionApi.insert(properties);
-        System.out.println(insert);
-
-        // 修改接口测试
-        // 删除接口测试
+        // Title列表
+        List<String> titleList = new ArrayList<>();
+        for (int i = 0; i < results.size(); i++) {
+            JSONObject jsonObject = results.getJSONObject(i);
+            // 如果是删除状态则跳过
+            if (jsonObject.getBoolean("archived")) {
+                continue;
+            }
+            JSONObject properties = jsonObject.getJSONObject("properties");
+            JSONObject title = properties.getJSONObject(titleName).getJSONArray("title").getJSONObject(0);
+            titleList.add(title.getString("plain_text"));
+        }
+        return titleList;
     }
 
-    public static void main(String[] args) {
-        JiraToNotion jiraToNotion = new JiraToNotion();
-        jiraToNotion.testNotionApi();
+    /**
+     * 新增Issue到Notion
+     *
+     * @param issue jira issue对象
+     */
+    public void insertIssue(Issue issue) {
+        System.out.println(DateUtil.now() + "新增Issue:" + issue.getKey());
+        List<Properties> properties = new ArrayList<>();
+        properties.add(Properties.Title.create("Issue", issue.getKey()));
+        properties.add(Properties.RichText.create("概要", issue.getSummary()));
+        properties.add(Properties.RichText.create("项目", issue.getProject().getName()));
+        properties.add(Properties.RichText.create("状态", issue.getStatus().getName()));
+        properties.add(Properties.Url.create("Jira链接", config.getJiraUrl() + "/browse/" + issue.getKey()));
+        List<Version> fixVersions = issue.getFixVersions();
+        if (!fixVersions.isEmpty()) {
+            properties.add(Properties.RichText.create("版本", fixVersions.get(0).getName()));
+        }
+        String created = (String) issue.getField("created");
+        DateTime date = DateUtil.parse(created, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+        String dateStr = DateUtil.format(date, "yyyy-MM-dd");
+        properties.add(Properties.RichText.create("创建时间", dateStr));
+        User reporter = issue.getReporter();
+        if (reporter != null) {
+            properties.add(Properties.RichText.create("报告人", reporter.getDisplayName()));
+        }
+
+        NotionApi notionApi = new NotionApi(config);
+        notionApi.insert(properties);
+    }
+
+    public void updateIssue(Issue issue) {
+
     }
 }
