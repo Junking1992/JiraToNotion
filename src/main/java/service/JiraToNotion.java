@@ -15,9 +15,7 @@ import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Jira数据传输至Notion
@@ -116,21 +114,46 @@ public class JiraToNotion {
         // 查询Jira数据
         List<Issue> jiraList = jiraDataQuery();
         // 查询Notion数据
-        List<String> notionList = notionDataQuery("Issue");
+        Map<String, Map<String, String>> notionMap = notionDataQuery("Issue");
+        // Jira中所有issue号
+        List<String> jiraIssueList = new ArrayList<>();
+        // 记录本次传输情况
+        int insert = 0;
+        int update = 0;
+        int delete = 0;
         // 新增或更新Notion的数据
         for (Issue issue : jiraList) {
+            jiraIssueList.add(issue.getKey());
             // 更新
-            if (notionList.contains(issue.getKey())) {
-                System.out.println(DateUtil.now() + "试图更新!");
+            if (notionMap.keySet().contains(issue.getKey())) {
+                Map<String, String> subMap = notionMap.get(issue.getKey());
+                // 校验是否需要更新
+                String issueUpdateStr = (String) issue.getField("updated");
+                String notionUpdateStr = subMap.get("updateTime");
+                issueUpdateStr = DateUtil.parse(issueUpdateStr, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).toString();
+                // 两平台更新时间不相同的话就更新数据
+                if (!issueUpdateStr.equals(notionUpdateStr)) {
+                    update++;
+                    updateIssue(subMap.get("id"), issue);
+                }
             }
             // 新增
             else {
+                insert++;
                 insertIssue(issue);
+            }
+        }
+        // 删除无效Issue
+        for (String issueNo : notionMap.keySet()) {
+            if (!jiraIssueList.contains(issueNo)) {
+                delete++;
+                Map<String, String> subMap = notionMap.get(issueNo);
+                deleteIssue(subMap.get("id"), issueNo);
             }
         }
         // 更新Notion标题时间
         new NotionApi(config).updateTitel("Jira任务（" + DateUtil.format(new Date(), "HH:mm") + "更新）");
-        System.out.println(DateUtil.now() + "传输完成!");
+        System.out.println(DateUtil.now() + "传输完成!新增:" + insert + "更新:" + update + "删除:" + delete);
     }
 
     /**
@@ -142,15 +165,14 @@ public class JiraToNotion {
             Issue.SearchResult searchResult = jiraClient.searchIssues(config.getJiraJql());
             return searchResult.issues;
         } catch (JiraException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return new ArrayList<>();
     }
 
     /**
      * 查询notion数据
      */
-    public List<String> notionDataQuery(String titleName) {
+    public Map<String, Map<String, String>> notionDataQuery(String titleName) {
         NotionApi notionApi = new NotionApi(config);
         JSONObject serch = notionApi.serch(NotionApi.PAGE, null);
         JSONArray results = serch.getJSONArray("results");
@@ -159,8 +181,7 @@ public class JiraToNotion {
             results.addAll(serch.getJSONArray("results"));
         }
 
-        // Title列表
-        List<String> titleList = new ArrayList<>();
+        Map<String, Map<String, String>> map = new HashMap<>();
         for (int i = 0; i < results.size(); i++) {
             JSONObject jsonObject = results.getJSONObject(i);
             // 如果是删除状态则跳过
@@ -169,18 +190,61 @@ public class JiraToNotion {
             }
             JSONObject properties = jsonObject.getJSONObject("properties");
             JSONObject title = properties.getJSONObject(titleName).getJSONArray("title").getJSONObject(0);
-            titleList.add(title.getString("plain_text"));
+            // Issue号
+            String issue = title.getString("plain_text");
+            // pageID
+            String id = jsonObject.getString("id");
+            // 更新时间
+            String updateTime = properties.getJSONObject("更新时间").getJSONArray("rich_text").getJSONObject(0).getJSONObject("text").getString("content");
+            Map<String, String> subMap = new HashMap<>();
+            subMap.put("id", id);
+            subMap.put("updateTime", updateTime);
+
+            map.put(issue, subMap);
         }
-        return titleList;
+        return map;
     }
 
     /**
-     * 新增Issue到Notion
+     * 新增Issue
      *
      * @param issue jira issue对象
      */
     public void insertIssue(Issue issue) {
         System.out.println(DateUtil.now() + "新增Issue:" + issue.getKey());
+        List<Properties> properties = getProperties(issue);
+        NotionApi notionApi = new NotionApi(config);
+        notionApi.insert(properties);
+    }
+
+    /**
+     * 更新Issue
+     *
+     * @param pageId
+     * @param issue  jira issue对象
+     */
+    public void updateIssue(String pageId, Issue issue) {
+        System.out.println(DateUtil.now() + "更新Issue:" + issue.getKey());
+        List<Properties> properties = getProperties(issue);
+        NotionApi notionApi = new NotionApi(config);
+        notionApi.update(pageId, properties);
+    }
+
+    /**
+     * 删除Issue
+     *
+     * @param pageId
+     */
+    public void deleteIssue(String pageId, String issueNo) {
+        System.out.println(DateUtil.now() + "删除Issue:" + issueNo);
+        NotionApi notionApi = new NotionApi(config);
+        notionApi.delete(pageId);
+    }
+
+    /**
+     * 生成Notion中的字段
+     */
+    private List<Properties> getProperties(Issue issue) {
         List<Properties> properties = new ArrayList<>();
         properties.add(Properties.Title.create("Issue", issue.getKey()));
         properties.add(Properties.RichText.create("概要", issue.getSummary()));
@@ -188,23 +252,15 @@ public class JiraToNotion {
         properties.add(Properties.RichText.create("状态", issue.getStatus().getName()));
         properties.add(Properties.Url.create("Jira链接", config.getJiraUrl() + "/browse/" + issue.getKey()));
         List<Version> fixVersions = issue.getFixVersions();
-        if (!fixVersions.isEmpty()) {
-            properties.add(Properties.RichText.create("版本", fixVersions.get(0).getName()));
-        }
+        properties.add(Properties.RichText.create("版本", fixVersions.isEmpty() ? "未排版" : fixVersions.get(0).getName()));
         String created = (String) issue.getField("created");
-        DateTime date = DateUtil.parse(created, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
-        String dateStr = DateUtil.format(date, "yyyy-MM-dd");
-        properties.add(Properties.RichText.create("创建时间", dateStr));
+        DateTime createdTime = DateUtil.parse(created, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+        properties.add(Properties.RichText.create("创建时间", createdTime.toString()));
+        String updated = (String) issue.getField("updated");
+        DateTime updatedTime = DateUtil.parse(updated, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+        properties.add(Properties.RichText.create("更新时间", updatedTime.toString()));
         User reporter = issue.getReporter();
-        if (reporter != null) {
-            properties.add(Properties.RichText.create("报告人", reporter.getDisplayName()));
-        }
-
-        NotionApi notionApi = new NotionApi(config);
-        notionApi.insert(properties);
-    }
-
-    public void updateIssue(Issue issue) {
-
+        properties.add(Properties.RichText.create("报告人", reporter == null ? "离职员工" : reporter.getDisplayName()));
+        return properties;
     }
 }
