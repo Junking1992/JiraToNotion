@@ -19,7 +19,7 @@ public class App extends Application {
         // 设置标题
         primaryStage.setTitle("JiraToNotion");
         // 设置窗口的图标
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon/icon.png")));
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon/JiraToNotion.png")));
         // 加载主布局
         Parent root = FXMLLoader.load(getClass().getResource("/fxml/Home.fxml"));
         // 设置主场景
@@ -41,7 +41,7 @@ public class App extends Application {
         Platform.setImplicitExit(false);
 
         // 图标路径
-        URL url = getClass().getResource("/icon/icon.png");
+        URL url = getClass().getResource("/icon/JiraToNotion.png");
         // 构建系统托盘图标
         java.awt.Image image = Toolkit.getDefaultToolkit().getImage(url);
 
