@@ -56,6 +56,12 @@ public class JiraToNotion {
                     long currentTime = System.currentTimeMillis();
                     long time = (currentTime - lastTime) / 1000 / 60;
                     if (time < interval) {
+                        // 每20秒循环一次
+                        try {
+                            Thread.sleep(20000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         continue;
                     }
                     lastTime = currentTime;
@@ -64,12 +70,6 @@ public class JiraToNotion {
                 try {
                     transmission();
                 } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                // 每10秒循环一次
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
