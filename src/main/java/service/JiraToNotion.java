@@ -102,6 +102,7 @@ public class JiraToNotion {
                             "databaseID").getText(), rootElement.element("notion").element("version").getText(),
                     rootElement.element("run").element("interval").getText());
         } catch (Exception e) {
+            Log.error("读取本地配置文件异常:", e);
         }
     }
 
