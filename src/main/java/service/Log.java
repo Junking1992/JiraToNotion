@@ -22,11 +22,12 @@ public class Log {
         if (textArea == null) {
             return;
         }
-        textArea.appendText(DateUtil.now() + ">" + msg);
+        textArea.appendText(DateUtil.now() + ">" + msg + e.getMessage());
         textArea.appendText("\n");
 
         StackTraceElement[] stackTraceArray = e.getStackTrace();
         for (StackTraceElement stackTraceElement : stackTraceArray) {
+            textArea.appendText(">");
             textArea.appendText(stackTraceElement.toString());
             textArea.appendText("\n");
         }
