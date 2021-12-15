@@ -14,6 +14,7 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import service.JiraToNotion;
+import service.Log;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -48,6 +49,7 @@ public class Home implements Initializable {
     public TextField notionDatabaseId;
     public Slider slider;
     public Label time;
+    public TextArea textArea;
 
     /**
      * 界面按钮
@@ -61,9 +63,9 @@ public class Home implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        Log.init(textArea);
         // 用户本地配置文件路径
         configLocation = Paths.get(System.getProperty("user.home"), ".jiraToNotion", "config.xml");
-
         // 本地配置文件不存在
         if (!Files.exists(configLocation)) {
             // 配置文件父目录不存在
@@ -72,25 +74,23 @@ public class Home implements Initializable {
                 try {
                     Files.createDirectory(configLocation.getParent());
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    showMsg("创建父目录异常:" + e.getMessage());
+                    Log.error("创建父目录异常:", e);
                 }
             }
 
             // 从jar包里将默认的配置文件复制到本地
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/config.xml"))); BufferedWriter out = Files.newBufferedWriter(configLocation)) {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/config" +
+                    ".xml"))); BufferedWriter out = Files.newBufferedWriter(configLocation)) {
                 in.lines().forEach(line -> {
                     try {
                         out.append(line);
                         out.newLine();
                     } catch (IOException e) {
-                        e.printStackTrace();
-                        showMsg("配置文件复制到本地异常:" + e.getMessage());
+                        Log.error("配置文件复制到本地异常:", e);
                     }
                 });
             } catch (IOException e) {
-                e.printStackTrace();
-                showMsg("配置文件复制到本地异常:" + e.getMessage());
+                Log.error("配置文件复制到本地异常:", e);
             }
         }
 
@@ -98,8 +98,7 @@ public class Home implements Initializable {
         try (BufferedReader bufferedReader = Files.newBufferedReader(configLocation)) {
             document = new SAXReader().read(bufferedReader);
         } catch (Exception e) {
-            e.printStackTrace();
-            showMsg("读取本地配置文件异常:" + e.getMessage());
+            Log.error("读取本地配置文件异常:", e);
         }
 
         // 界面设置值
@@ -197,14 +196,13 @@ public class Home implements Initializable {
             writer.write(document);
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
-            showMsg("保存到本地配置文件异常:" + e.getMessage());
+            Log.error("保存到本地配置文件异常:", e);
         } finally {
             if (writer != null) {
                 try {
                     writer.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.error("保存到本地配置文件关闭资源异常:", e);
                 }
             }
         }
@@ -224,7 +222,7 @@ public class Home implements Initializable {
                 try {
                     Thread.sleep(1200L);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Log.error("提示信息等待异常:", e);
                 }
                 return null;
             }

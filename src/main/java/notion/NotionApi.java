@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import service.Config;
+import service.Log;
 
 import java.util.List;
 
@@ -183,7 +184,7 @@ public class NotionApi {
                 i++;
                 httpResponse = httpRequest.execute();
             } catch (Exception e) {
-                System.out.println("第" + i + "次请求失败!");
+                Log.info("第" + i + "次请求" + httpRequest.getUrl() + "失败!");
                 // 事不过三
                 if (i >= 3) {
                     throw new RuntimeException(e);

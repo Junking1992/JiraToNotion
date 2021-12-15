@@ -36,6 +36,7 @@ public class JiraToNotion {
     public void run() {
         new Thread(() -> {
             // 开始运行
+            Log.info("开始运行!");
             run = true;
             while (run) {
                 // 实时获取最新配置
@@ -59,8 +60,8 @@ public class JiraToNotion {
                         // 每20秒循环一次
                         try {
                             Thread.sleep(20000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        } catch (Exception e) {
+                            Log.error("间隔等待异常:", e);
                         }
                         continue;
                     }
@@ -70,10 +71,10 @@ public class JiraToNotion {
                 try {
                     transmission();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.error("传输数据异常:", e);
                 }
             }
-            System.out.println(DateUtil.now() + "运行已停止!");
+            Log.info("已停止运行!");
         }).start();
     }
 
@@ -94,7 +95,12 @@ public class JiraToNotion {
         try (BufferedReader bufferedReader = Files.newBufferedReader(configPath)) {
             Document document = new SAXReader().read(bufferedReader);
             Element rootElement = document.getRootElement();
-            config = new Config(rootElement.element("jira").element("url").getText(), rootElement.element("jira").element("jql").getText(), rootElement.element("jira").element("username").getText(), rootElement.element("jira").element("password").getText(), rootElement.element("notion").element("token").getText(), rootElement.element("notion").element("databaseID").getText(), rootElement.element("notion").element("version").getText(), rootElement.element("run").element("interval").getText());
+            config = new Config(rootElement.element("jira").element("url").getText(),
+                    rootElement.element("jira").element("jql").getText(), rootElement.element("jira").element(
+                            "username").getText(), rootElement.element("jira").element("password").getText(),
+                    rootElement.element("notion").element("token").getText(), rootElement.element("notion").element(
+                            "databaseID").getText(), rootElement.element("notion").element("version").getText(),
+                    rootElement.element("run").element("interval").getText());
         } catch (Exception e) {
         }
     }
@@ -110,7 +116,7 @@ public class JiraToNotion {
      * 传输数据
      */
     public void transmission() {
-        System.out.println(DateUtil.now() + "开始传输!");
+        Log.info("开始传输!");
         // 查询Jira数据
         List<Issue> jiraList = jiraDataQuery();
         // 查询Notion数据
@@ -130,7 +136,8 @@ public class JiraToNotion {
                 // 校验是否需要更新
                 String issueUpdateStr = (String) issue.getField("updated");
                 String notionUpdateStr = subMap.get("updateTime");
-                issueUpdateStr = DateUtil.parse(issueUpdateStr, DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).toString();
+                issueUpdateStr = DateUtil.parse(issueUpdateStr,
+                        DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).toString();
                 // 两平台更新时间不相同的话就更新数据
                 if (!issueUpdateStr.equals(notionUpdateStr)) {
                     update++;
@@ -153,14 +160,15 @@ public class JiraToNotion {
         }
         // 更新Notion标题时间
         new NotionApi(config).updateTitel("Jira任务（" + DateUtil.format(new Date(), "HH:mm") + "更新）");
-        System.out.println(DateUtil.now() + "传输完成!新增:" + insert + "更新:" + update + "删除:" + delete);
+        Log.info("传输完成!新增:" + insert + "更新:" + update + "删除:" + delete);
     }
 
     /**
      * 查询jira数据
      */
     public List<Issue> jiraDataQuery() {
-        JiraClient jiraClient = new JiraClient(config.getJiraUrl(), new BasicCredentials(config.getJiraUsername(), config.getJiraPassword()));
+        JiraClient jiraClient = new JiraClient(config.getJiraUrl(), new BasicCredentials(config.getJiraUsername(),
+                config.getJiraPassword()));
         try {
             Issue.SearchResult searchResult = jiraClient.searchIssues(config.getJiraJql());
             return searchResult.issues;
@@ -195,7 +203,8 @@ public class JiraToNotion {
             // pageID
             String id = jsonObject.getString("id");
             // 更新时间
-            String updateTime = properties.getJSONObject("更新时间").getJSONArray("rich_text").getJSONObject(0).getJSONObject("text").getString("content");
+            String updateTime =
+                    properties.getJSONObject("更新时间").getJSONArray("rich_text").getJSONObject(0).getJSONObject("text").getString("content");
             Map<String, String> subMap = new HashMap<>();
             subMap.put("id", id);
             subMap.put("updateTime", updateTime);
@@ -211,7 +220,7 @@ public class JiraToNotion {
      * @param issue jira issue对象
      */
     public void insertIssue(Issue issue) {
-        System.out.println(DateUtil.now() + "新增Issue:" + issue.getKey());
+        Log.info("新增Issue:" + issue.getKey());
         List<Properties> properties = getProperties(issue);
         NotionApi notionApi = new NotionApi(config);
         notionApi.insert(properties);
@@ -224,7 +233,7 @@ public class JiraToNotion {
      * @param issue  jira issue对象
      */
     public void updateIssue(String pageId, Issue issue) {
-        System.out.println(DateUtil.now() + "更新Issue:" + issue.getKey());
+        Log.info("更新Issue:" + issue.getKey());
         List<Properties> properties = getProperties(issue);
         NotionApi notionApi = new NotionApi(config);
         notionApi.update(pageId, properties);
@@ -236,7 +245,7 @@ public class JiraToNotion {
      * @param pageId
      */
     public void deleteIssue(String pageId, String issueNo) {
-        System.out.println(DateUtil.now() + "删除Issue:" + issueNo);
+        Log.info("删除Issue:" + issueNo);
         NotionApi notionApi = new NotionApi(config);
         notionApi.delete(pageId);
     }
