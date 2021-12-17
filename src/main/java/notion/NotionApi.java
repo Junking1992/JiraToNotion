@@ -189,6 +189,7 @@ public class NotionApi {
                 if (i >= 3) {
                     throw new RuntimeException(e);
                 }
+                Log.info("正尝试重新请求...");
             }
         } while (httpResponse == null);
         return httpResponse;
