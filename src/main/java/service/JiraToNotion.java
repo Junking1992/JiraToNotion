@@ -209,8 +209,12 @@ public class JiraToNotion {
             Map<String, String> subMap = new HashMap<>();
             subMap.put("id", id);
             subMap.put("updateTime", updateTime);
-
-            map.put(issue, subMap);
+            // 重复数据自动删除
+            if (map.keySet().contains(issue)) {
+                deleteIssue(id, issue);
+            } else {
+                map.put(issue, subMap);
+            }
         }
         return map;
     }
