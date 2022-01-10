@@ -31,6 +31,13 @@ public class JiraToNotion {
     private Long lastTime;
 
     /**
+     * 记录本次传输情况
+     */
+    int insert = 0;
+    int update = 0;
+    int delete = 0;
+
+    /**
      * 运行
      */
     public void run() {
@@ -118,16 +125,16 @@ public class JiraToNotion {
      */
     public void transmission() {
         Log.info("开始传输!");
+        // 重置计数
+        insert = 0;
+        update = 0;
+        delete = 0;
         // 查询Jira数据
         List<Issue> jiraList = jiraDataQuery();
         // 查询Notion数据
         Map<String, Map<String, String>> notionMap = notionDataQuery("Issue");
         // Jira中所有issue号
         List<String> jiraIssueList = new ArrayList<>();
-        // 记录本次传输情况
-        int insert = 0;
-        int update = 0;
-        int delete = 0;
         // 新增或更新Notion的数据
         for (Issue issue : jiraList) {
             jiraIssueList.add(issue.getKey());
@@ -141,20 +148,17 @@ public class JiraToNotion {
                         DateUtil.newSimpleFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).toString();
                 // 两平台更新时间不相同的话就更新数据
                 if (!issueUpdateStr.equals(notionUpdateStr)) {
-                    update++;
                     updateIssue(subMap.get("id"), issue);
                 }
             }
             // 新增
             else {
-                insert++;
                 insertIssue(issue);
             }
         }
         // 删除无效Issue
         for (String issueNo : notionMap.keySet()) {
             if (!jiraIssueList.contains(issueNo)) {
-                delete++;
                 Map<String, String> subMap = notionMap.get(issueNo);
                 deleteIssue(subMap.get("id"), issueNo);
             }
@@ -225,6 +229,7 @@ public class JiraToNotion {
      * @param issue jira issue对象
      */
     public void insertIssue(Issue issue) {
+        insert++;
         Log.info("新增Issue:" + issue.getKey());
         List<Properties> properties = getProperties(issue);
         NotionApi notionApi = new NotionApi(config);
@@ -238,6 +243,7 @@ public class JiraToNotion {
      * @param issue  jira issue对象
      */
     public void updateIssue(String pageId, Issue issue) {
+        update++;
         Log.info("更新Issue:" + issue.getKey());
         List<Properties> properties = getProperties(issue);
         NotionApi notionApi = new NotionApi(config);
@@ -250,6 +256,7 @@ public class JiraToNotion {
      * @param pageId
      */
     public void deleteIssue(String pageId, String issueNo) {
+        delete++;
         Log.info("删除Issue:" + issueNo);
         NotionApi notionApi = new NotionApi(config);
         notionApi.delete(pageId);
