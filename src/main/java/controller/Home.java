@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ResourceBundle;
+import java.util.concurrent.*;
 
 public class Home implements Initializable {
 
@@ -58,6 +59,12 @@ public class Home implements Initializable {
     public Button jira_save_but;
     public Button notion_save_but;
     public Button start;
+
+    /**
+     * 创建线程池
+      */
+    private ExecutorService threadPool = new ThreadPoolExecutor(1, 1, 0L,
+            TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
     private JiraToNotion jiraToNotion = new JiraToNotion();
 
@@ -232,6 +239,6 @@ public class Home implements Initializable {
                 msg.setVisible(false);
             }
         };
-        new Thread(task).start();
+        threadPool.submit(task);
     }
 }
