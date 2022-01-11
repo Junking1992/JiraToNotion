@@ -1,6 +1,7 @@
 package service;
 
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import javafx.scene.control.TextArea;
 
 public class Log {
@@ -14,7 +15,7 @@ public class Log {
         if (textArea == null) {
             return;
         }
-        textArea.appendText(DateUtil.now() + ">" + msg);
+        textArea.appendText(DatePattern.NORM_TIME_FORMAT.format(new DateTime()) + ">" + msg);
         textArea.appendText("\n");
     }
 
@@ -22,7 +23,7 @@ public class Log {
         if (textArea == null) {
             return;
         }
-        textArea.appendText(DateUtil.now() + ">" + msg + e.getMessage());
+        textArea.appendText(DatePattern.NORM_TIME_FORMAT.format(new DateTime()) + ">" + msg + e.getMessage());
         textArea.appendText("\n");
 
         StackTraceElement[] stackTraceArray = e.getStackTrace();
