@@ -28,7 +28,7 @@ public class JiraToNotion {
 
     private boolean run;
 
-    private Long lastTime;
+    public Long lastTime;
 
     /**
      * 记录本次传输情况

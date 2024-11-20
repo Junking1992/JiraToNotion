@@ -185,6 +185,8 @@ public class Home implements Initializable {
             start.setTextFill(Color.rgb(0, 0, 0));
             showMsg("正在停止...");
         } else {
+            // 重置上次运行时间记录
+            jiraToNotion.lastTime = null;
             // 启动更新数据
             jiraToNotion.run();
             start.setText("停止");
